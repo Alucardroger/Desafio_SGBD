@@ -1,0 +1,166 @@
+CREATE DATABASE ecommerce;
+USE ecommerce;
+
+-- Criação da tabela cliente
+CREATE TABLE clients (
+	idClient INT AUTO_INCREMENT PRIMARY KEY,
+	firstName VARCHAR(50),
+	lastName VARCHAR(50),
+	CPF CHAR(11) NOT NULL,
+	address VARCHAR(100),
+	UNIQUE (CPF)
+);
+
+-- Criação da tabela produto
+CREATE TABLE products (
+	idProduct INT AUTO_INCREMENT PRIMARY KEY,
+	productName VARCHAR(10) NOT NULL,
+	classificationKids BOOLEAN DEFAULT FALSE,
+	category ENUM('Eletrônico', 'Vestimenta', 'Brinquedos', 'Alimento', 'Móveis') NOT NULL,
+	avaliacao FLOAT DEFAULT 0,
+	size VARCHAR(20)
+);
+
+-- Criação da tabela pagamento
+CREATE TABLE payments (
+	idPayment INT AUTO_INCREMENT PRIMARY KEY,
+	idClient INT,
+	paymentType ENUM('Boleto', 'Cartão', 'Dois cartões', 'PIX', 'Cartão da loja'),
+	limitAvailable FLOAT,
+	FOREIGN KEY (idClient) REFERENCES clients(idClient),
+	CHECK (limitAvailable >= 0),
+	CHECK (paymentType = 'Boleto' OR paymentType = 'Cartão' OR paymentType = 'Dois cartões' OR paymentType = 'PIX' OR paymentType = 'Cartão da loja')
+);
+
+-- Criação da tabela pedido
+CREATE TABLE orders (
+	idOrder INT AUTO_INCREMENT PRIMARY KEY,
+	idClient INT,
+	orderStatus ENUM('Cancelado', 'Confirmado', 'Em processamento') DEFAULT 'Em processamento',
+	orderDescription VARCHAR(255),
+	sendValue FLOAT DEFAULT 10,
+	paymentCash BOOLEAN DEFAULT FALSE,
+	FOREIGN KEY (idClient) REFERENCES clients(idClient)
+);
+
+-- criar tabela estoque
+CREATE TABLE productStorage (
+	idProdStorage INT AUTO_INCREMENT PRIMARY KEY,
+	storageLocation VARCHAR(255),
+	quantidade FLOAT DEFAULT 0,
+	paymentCash BOOLEAN DEFAULT FALSE
+);
+
+-- criar tabela fornecedor
+CREATE TABLE supplier (
+	idSupplier INT AUTO_INCREMENT PRIMARY KEY,
+	SocialName VARCHAR(255) NOT NULL,
+	CNPJ CHAR(15) NOT NULL,
+	contact CHAR(11) NOT NULL,
+	UNIQUE (CNPJ)
+);
+
+-- criar tabela vendedor
+CREATE TABLE seller (
+	idSeller INT AUTO_INCREMENT PRIMARY KEY,
+	SocialName VARCHAR(255) NOT NULL,
+	AbstName VARCHAR(255),
+	CNPJ CHAR(15),
+	CPF CHAR(9),
+	location VARCHAR(255),
+	contact CHAR(11) NOT NULL,
+	idPseller INT, -- Added idPseller column
+	UNIQUE (CNPJ),
+	UNIQUE (CPF)
+);
+
+-- criar tabela productSeller
+CREATE TABLE productSeller (
+	idPseller INT,
+	idProduct INT,
+	prodQuantity INT DEFAULT 1,
+	PRIMARY KEY (idPseller, idProduct),
+	CONSTRAINT fk_product_seller FOREIGN KEY (idPseller) REFERENCES seller(idSeller),
+	CONSTRAINT fk_product_product FOREIGN KEY (idProduct) REFERENCES products(idProduct)
+);
+
+
+-- Retrieve all clients
+SELECT * FROM clients;
+
+-- Retrieve product names and categories
+SELECT productName, category FROM products;
+
+-- Retrieve clients with the last name 'Silva'
+SELECT * FROM clients WHERE lastName = 'Silva';
+
+-- Retrieve products with a rating greater than 4
+SELECT * FROM products WHERE avaliacao > 4;
+
+-- Retrieve clients with a full name (concatenation of first name and last name)
+SELECT firstName, lastName, CONCAT(firstName, ' ', lastName) AS fullName FROM clients;
+
+-- Retrieve products with a discount price (original price - 10%)
+SELECT productName, price, price * 0.9 AS discountPrice FROM products;
+
+-- Retrieve clients ordered by last name in ascending order
+SELECT * FROM clients ORDER BY lastName ASC;
+
+-- Retrieve products ordered by price in descending order
+SELECT * FROM products ORDER BY price DESC;
+
+-- Retrieve categories with average product ratings greater than 4
+SELECT category, AVG(avaliacao) AS avgRating FROM products GROUP BY category HAVING avgRating > 4;
+
+-- Retrieve suppliers with more than 10 products in stock
+SELECT supplierId, COUNT(*) AS productCount FROM products GROUP BY supplierId HAVING productCount > 10;
+
+
+-- Retrieve orders with client information
+SELECT o.idOrder, o.orderStatus, c.firstName, c.lastName
+FROM orders o
+JOIN clients c ON o.idClient = c.idClient;
+
+-- Retrieve products and their suppliers' information
+SELECT p.productName, s.SocialName
+FROM products p
+JOIN supplier s ON p.supplierId = s.idSupplier;
+
+-- Retrieve orders with client information
+SELECT o.idOrder, o.orderStatus, c.firstName, c.lastName
+FROM orders o
+JOIN clients c ON o.idClient = c.idClient;
+
+-- Retrieve products and their suppliers' information
+SELECT p.productName, s.SocialName
+FROM products p
+JOIN supplier s ON p.supplierId = s.idSupplier;
+
+
+
+ -- How many orders where made by each client?
+
+SELECT c.firstName, c.lastName, COUNT(*) AS orderCount
+FROM clients c
+JOIN orders o ON c.idClient = o.idClient
+GROUP BY c.idClient;
+
+ -- Are any of the suppliers sellers?
+
+SELECT s.SocialName AS sellerName, s.CNPJ AS sellerCNPJ, f.SocialName AS supplierName, f.CNPJ AS supplierCNPJ
+FROM seller s
+JOIN supplier f ON s.CNPJ = f.CNPJ;
+
+
+ -- Relation between suppliers and stock:
+
+SELECT p.productName, s.SocialName AS supplierName, ps.quantidade
+FROM products p
+JOIN productStorage ps ON p.idProduct = ps.idProduct
+JOIN supplier s ON p.supplierId = s.idSupplier;
+
+
+ -- Relation of the name of suppliers and the name of the products: 
+SELECT p.productName, s.SocialName AS supplierName
+FROM products p
+JOIN supplier s ON p.supplierId = s.idSupplier;
