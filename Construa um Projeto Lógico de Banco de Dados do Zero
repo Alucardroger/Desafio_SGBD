@@ -1,0 +1,90 @@
+-- Criação do banco de dados
+CREATE DATABASE hospital;
+
+-- Seleciona o banco de dados
+USE hospital;
+
+-- Criação da tabela "Pacientes"
+CREATE TABLE Pacientes (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  nome VARCHAR(100) NOT NULL,
+  idade INT NOT NULL,
+  genero CHAR(1) NOT NULL CHECK (genero IN ('M', 'F')),
+  email VARCHAR(100),
+  telefone VARCHAR(20) NOT NULL,
+  endereco VARCHAR(200)
+);
+
+-- Criação da tabela "Medicos"
+CREATE TABLE Medicos (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  nome VARCHAR(100) NOT NULL,
+  especialidade VARCHAR(100),
+  crm VARCHAR(20) NOT NULL,
+  email VARCHAR(100),
+  telefone VARCHAR(20) NOT NULL,
+  endereco VARCHAR(200)
+);
+
+-- Criação da tabela "Consultas"
+CREATE TABLE Consultas (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  idPaciente INT NOT NULL,
+  idMedico INT NOT NULL,
+  dataConsulta DATE NOT NULL,
+  horaConsulta TIME NOT NULL,
+  observacoes TEXT,
+  tipoAtendimento ENUM('Particular', 'Público', 'Plano de Saúde') NOT NULL,
+  FOREIGN KEY (idPaciente) REFERENCES Pacientes(id),
+  FOREIGN KEY (idMedico) REFERENCES Medicos(id),
+  CONSTRAINT consulta_unique UNIQUE (idPaciente, dataConsulta, horaConsulta) -- Garante que uma consulta não seja duplicada para o mesmo paciente, data e hora
+);
+
+-- Criação da tabela "Exames"
+CREATE TABLE Exames (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  idPaciente INT NOT NULL,
+  tipoExame VARCHAR(100),
+  dataExame DATE NOT NULL,
+  resultado TEXT,
+  tipoAtendimento ENUM('Particular', 'Público', 'Plano de Saúde') NOT NULL,
+  FOREIGN KEY (idPaciente) REFERENCES Pacientes(id)
+);
+
+-- queries 
+-- Recupera todos os pacientes da tabela Pacientes
+SELECT * FROM Pacientes;
+
+-- Recupera os nomes e idades dos pacientes
+SELECT nome, idade FROM Pacientes;
+
+-- Recupera apenas os pacientes do sexo masculino
+SELECT * FROM Pacientes WHERE genero = 'M';
+
+-- Recupera os pacientes com idade maior que 30 anos
+SELECT * FROM Pacientes WHERE idade > 30;
+
+
+-- Recupera o nome completo dos pacientes concatenando o nome e sobrenome
+SELECT CONCAT(nome, ' ', sobrenome) AS nome_completo FROM Pacientes;
+
+-- Calcula a idade em meses dos pacientes
+SELECT nome, idade * 12 AS idade_meses FROM Pacientes;
+
+-- Recupera os pacientes ordenados por idade em ordem decrescente
+SELECT * FROM Pacientes ORDER BY idade DESC;
+
+-- Recupera os pacientes ordenados por nome em ordem alfabética
+SELECT * FROM Pacientes ORDER BY nome;
+
+
+-- Recupera os médicos que têm mais de 10 consultas agendadas
+SELECT idMedico, COUNT(*) AS total_consultas FROM Consultas GROUP BY idMedico HAVING total_consultas > 10;
+
+
+
+-- Recupera informações de pacientes e suas consultas correspondentes
+SELECT p.nome, c.dataConsulta, c.horaConsulta FROM Pacientes p INNER JOIN Consultas c ON p.id = c.idPaciente;
+
+-- Recupera informações de pacientes, suas consultas correspondentes e os médicos responsáveis pelas consultas
+SELECT p.nome, c.dataConsulta, c.horaConsulta, m.nome AS nome_medico FROM Pacientes p INNER JOIN Consultas c ON p.id = c.idPaciente INNER JOIN Medicos m ON c.idMedico = m.id;
